@@ -7,6 +7,7 @@ from sklearn.decomposition import PCA
 
 from sklearn.mixture import BayesianGaussianMixture as BGM
 from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score, rand_score
 
 def generate_data(dim,clusters,samples_per_cluster,spread=3.0, lb=0,ub=200):
 
@@ -77,7 +78,7 @@ def dimension_reduction_LDA(X_train,y_train,X,n_components=3):
   X = sc.transform(X)
   X_train = lda.fit_transform(X_train, y_train)
   X = lda.transform(X)
-  return X
+  return X_train, X
 
 def dimension_reduction_PCA(X,n_components=10):
   """
@@ -96,12 +97,12 @@ def dimension_reduction_PCA(X,n_components=10):
 
 X,labels,centers=generate_data(dim=100,clusters=10,spread=[1,30],samples_per_cluster=[30,20,10,50,35,20,15,60,25,40])
 X_train, X_test, y_train, y_test = train_test_split(X, labels, test_size=0.8, random_state=0)
-X_reduced_LDA=dimension_reduction_LDA(X_train,y_train,X_test,4) #could change up to 10
+X_train_LDA, X_reduced_LDA=dimension_reduction_LDA(X_train,y_train,X_test, 4) #could change up to 10
 
 #%% DPGMM comparison 
 clf = BGM(n_components=10, weight_concentration_prior_type='dirichlet_process')
 clf.fit(X_train)
-y_pred = clf.predict(X_train)
+y_pred_dp = clf.predict(X_test)
 
 ### TODO: dp seems not to give a good pic of the dataset ... need help
 
@@ -115,9 +116,9 @@ plt.scatter(X_train[:,2],X_train[:,3])
 plt.show()
 
 #%% LDA + DPGMM
-clf_comb = BGM(n_components=10, weight_concentration_prior_type='dirichlet_process')
-clf_comb.fit(X_reduced_LDA)
-y_pred = clf_comb.predict(X_reduced_LDA)
+clf_comb = BGM(n_components=4, weight_concentration_prior_type='dirichlet_process')
+clf_comb.fit(X_train_LDA)
+y_pred_comb = clf_comb.predict(X_reduced_LDA)
 
 comb_mean = clf_comb.means_,
 # comb_cov = clf_comb.covariances_
@@ -131,3 +132,21 @@ plt.show()
 clf_kmeans = KMeans(n_clusters=10)
 clf_kmeans.fit(X_train)
 kmeans_mean = clf_kmeans.cluster_centers_
+y_pred_kmeans = clf_kmeans.predict(X_test)
+
+#%% use S-score
+dp_rscore = rand_score(y_test, y_pred_dp)
+comb_rscore = rand_score(y_test, y_pred_comb)
+km_rscore = rand_score(y_test, y_pred_kmeans)
+
+dp_sscore = silhouette_score(X_test, y_pred_dp)
+comb_sscore = silhouette_score(X_test, y_pred_comb)
+km_sscore = silhouette_score(X_test, y_pred_kmeans)
+
+print(dp_rscore)
+print(comb_rscore)
+print(km_rscore)
+
+print(dp_sscore)
+print(comb_sscore)
+print(km_sscore)
