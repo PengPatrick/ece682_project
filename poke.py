@@ -7,26 +7,30 @@ from sklearn.decomposition import PCA
 
 from sklearn.mixture import BayesianGaussianMixture as BGM
 from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score, rand_score
+from sklearn.metrics import silhouette_score, rand_score, adjusted_rand_score
 
-def generate_data(dim,clusters,samples_per_cluster,spread=3.0, lb=0,ub=200):
+def generate_data(samples, dim, clusters, ratio_per_cluster, spread=3.0, lower_bound=0, upper_bound=200):
 
   """
   Parameters
   ----------
+  samples: int default=None
+      Number of data points generated.
+
   dim: int, default=None
        The dimension of features for each sample.
 
   clusters: int, defult=None
        Number of clusters to generate.
 
-  spread: float or list [lb, up], default=3.0
+  spread: float or list [lower_bound, upper_bound], default=3.0
           If float, variance for each feature in each cluster.
-          If list [lb, up], the lower and upper bounds of variance on each feature in each cluster
+          If list [lower_bound, upper_bound], the lower and upper bounds of variance on each feature in each cluster
   
-  samples_per_cluster : list, Number of samples in each cluster
+  ratio_per_cluster : ndarray of shape (clusters) 
+      ratio of samples in each cluster
 
-  lb,up: int, default lb=0, up=200
+  lower_bound, upper_bound: int, default lower_bound=0, upper_bound=200
         Lower and upper bound of the samples generated  
 
   Returns
@@ -39,7 +43,10 @@ def generate_data(dim,clusters,samples_per_cluster,spread=3.0, lb=0,ub=200):
         The centers of each cluster.
   """
 
-  centers = np.random.uniform(lb, ub, size=(clusters,dim))
+  samples_per_cluster = np.int64(samples * ratio_per_cluster)
+  print(samples_per_cluster)
+
+  centers = np.random.uniform(lower_bound, upper_bound, size=(clusters,dim))
   if isinstance(spread, (float,int)):
         spread  = [spread]*2 
   dim_spread=np.random.uniform(np.sqrt(spread[0]), np.sqrt(spread[1]), size=(clusters,dim))
@@ -52,7 +59,9 @@ def generate_data(dim,clusters,samples_per_cluster,spread=3.0, lb=0,ub=200):
 
   X = np.concatenate(X)
   labels = np.array(labels)
-  total_n_samples = np.sum(samples_per_cluster)
+  # total_n_samples = np.sum(samples_per_cluster)
+  total_n_samples = samples
+
   indices = np.arange(total_n_samples)
   np.random.shuffle(indices)
   X = X[indices]
@@ -80,53 +89,40 @@ def dimension_reduction_LDA(X_train,y_train,X,n_components=3):
   X = lda.transform(X)
   return X_train, X
 
-def dimension_reduction_PCA(X,n_components=10):
-  """
-  Parameters
-  ---------
-  X: data with unknown cluster labels
-  n_components: number of components to retain
 
-  Returns
-  ---------
-  X: reduced data with n_components
-  """
-  pca = PCA(n_components=n_components)
-  X=pca.fit_transform(X)
-  return X
-
-X,labels,centers=generate_data(dim=100,clusters=10,spread=[1,30],samples_per_cluster=[30,20,10,50,35,20,15,60,25,40])
-X_train, X_test, y_train, y_test = train_test_split(X, labels, test_size=0.8, random_state=0)
-X_train_LDA, X_reduced_LDA=dimension_reduction_LDA(X_train,y_train,X_test, 4) #could change up to 10
+TOTAL_POINTS = 10000
+X, labels, centers = generate_data(samples=TOTAL_POINTS, dim=100, clusters=10, spread=[1,30], ratio_per_cluster=np.array([0.16,0.15,0.05,0.1,0.2,0.05,0.05,0.12,0.08,0.04]))
+X_train, X_test, y_train, y_test = train_test_split(X, labels, test_size=0.2, random_state=0)
+X_train_LDA, X_test_LDA = dimension_reduction_LDA(X_train,y_train,X_test, 4) #could change up to 10
 
 #%% DPGMM comparison 
-clf = BGM(n_components=10, weight_concentration_prior_type='dirichlet_process')
-clf.fit(X_train)
-y_pred_dp = clf.predict(X_test)
+clf_dp = BGM(n_components=10, weight_concentration_prior_type='dirichlet_process')
+clf_dp.fit(X_train)
+y_pred_dp = clf_dp.predict(X_test)
 
 ### TODO: dp seems not to give a good pic of the dataset ... need help
 
 ### some params
-dp_mean = clf.means_,
+# dp_mean = clf.means_,
 # dp_cov = clf.covariances_
 
-plt.figure(1, figsize=(8,8))
-plt.clf()
-plt.scatter(X_train[:,2],X_train[:,3])
-plt.show()
+# plt.figure(1, figsize=(8,8))
+# plt.clf()
+# plt.scatter(X_train[:,2],X_train[:,3])
+# plt.show()
 
 #%% LDA + DPGMM
 clf_comb = BGM(n_components=4, weight_concentration_prior_type='dirichlet_process')
 clf_comb.fit(X_train_LDA)
-y_pred_comb = clf_comb.predict(X_reduced_LDA)
+y_pred_comb = clf_comb.predict(X_test_LDA)
 
-comb_mean = clf_comb.means_,
+# comb_mean = clf_comb.means_,
 # comb_cov = clf_comb.covariances_
 
-plt.figure(2, figsize=(8,8))
-plt.clf()
-plt.scatter(X_reduced_LDA[:,2],X_reduced_LDA[:,3])
-plt.show()
+# plt.figure(2, figsize=(8,8))
+# plt.clf()
+# plt.scatter(X_test_LDA[:,2],X_test_LDA[:,3])
+# plt.show()
 
 #%% K-means
 clf_kmeans = KMeans(n_clusters=10)
@@ -143,6 +139,10 @@ dp_sscore = silhouette_score(X_test, y_pred_dp)
 comb_sscore = silhouette_score(X_test, y_pred_comb)
 km_sscore = silhouette_score(X_test, y_pred_kmeans)
 
+dp_arscore = adjusted_rand_score(y_test, y_pred_dp) # better than rand index as a metrics?
+comb_arscore = adjusted_rand_score(y_test, y_pred_comb)
+km_arscore = adjusted_rand_score(y_test, y_pred_kmeans)
+
 print(dp_rscore)
 print(comb_rscore)
 print(km_rscore)
@@ -150,3 +150,7 @@ print(km_rscore)
 print(dp_sscore)
 print(comb_sscore)
 print(km_sscore)
+
+print(dp_arscore)
+print(comb_arscore)
+print(km_arscore)
