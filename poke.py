@@ -1,0 +1,140 @@
+from sqlite3 import DatabaseError
+import numpy as np
+import matplotlib.pyplot as plt
+from regex import D
+from sklearn.model_selection import train_test_split
+
+from sklearn.mixture import BayesianGaussianMixture as BGM
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score, rand_score, adjusted_rand_score
+
+from DataGenerator import DataGenerator
+import utils
+
+### Constants
+TOTAL_POINTS = 10000
+N_CLUSTERS = 10
+RATIOS = np.array([0.16,0.15,0.05,0.1,0.2,0.05,0.05,0.12,0.08,0.04]) # might need random assignments for ratio
+# RATIOS = np.ones(N_CLUSTERS) * (1/N_CLUSTERS) # balanced clusters --- DP and KMeans same performance
+
+### TODO: Explore how data distribution affects the performance for both K-means and DP
+### TODO: Need "worse" dataset so that K-means performance not as good 
+
+
+myGenerator = DataGenerator(samples=TOTAL_POINTS, n_features=100, n_clusters=N_CLUSTERS, spread=[1,30], ratio_per_cluster=RATIOS)
+
+X, labels, centers = myGenerator.generate_data()
+X_train, X_test, y_train, y_test = train_test_split(X, labels, test_size=0.2, random_state=0)
+X_train_LDA, X_test_LDA = utils.dimension_reduction_LDA(X_train,y_train,X_test, 4) #could change up to 10
+
+#%% DPGMM comparison 
+clf_dp = BGM(n_components=20, covariance_type="full", weight_concentration_prior_type='dirichlet_process')
+clf_dp.fit(X_train)
+y_pred_dp = clf_dp.predict(X_test)
+
+### TODO: threshold tuning === when n_components is high, DPBGM easily has more clusters
+### TODO: dp seems not to give a good pic of the dataset ... need help
+
+### some params
+# dp_mean = clf.means_,
+# dp_cov = clf.covariances_
+
+# plt.figure(1, figsize=(8,8))
+# plt.clf()
+# plt.scatter(X_train[:,2],X_train[:,3])
+# plt.show()
+
+#%% LDA + DPGMM
+clf_comb = BGM(n_components=20, covariance_type="full", weight_concentration_prior_type='dirichlet_process')
+clf_comb.fit(X_train_LDA)
+y_pred_comb = clf_comb.predict(X_test_LDA)
+
+# comb_mean = clf_comb.means_,
+# comb_cov = clf_comb.covariances_
+
+# plt.figure(2, figsize=(8,8))
+# plt.clf()
+# plt.scatter(X_test_LDA[:,2],X_test_LDA[:,3])
+# plt.show()
+
+#%% K-means
+clf_kmeans = KMeans(n_clusters=10)
+clf_kmeans.fit(X_train)
+kmeans_mean = clf_kmeans.cluster_centers_
+y_pred_kmeans = clf_kmeans.predict(X_test)
+
+#%% use S-score
+dp_rscore = rand_score(y_test, y_pred_dp)
+comb_rscore = rand_score(y_test, y_pred_comb)
+km_rscore = rand_score(y_test, y_pred_kmeans)
+
+dp_sscore = silhouette_score(X_test, y_pred_dp)
+comb_sscore = silhouette_score(X_test_LDA, y_pred_comb)
+km_sscore = silhouette_score(X_test, y_pred_kmeans)
+
+dp_arscore = adjusted_rand_score(y_test, y_pred_dp) # better than rand index as a metrics?
+comb_arscore = adjusted_rand_score(y_test, y_pred_comb)
+km_arscore = adjusted_rand_score(y_test, y_pred_kmeans)
+
+print('###### RI ######')
+print(dp_rscore)
+print(comb_rscore)
+print(km_rscore)
+
+print('###### Silhouette Score ######')
+print(dp_sscore)
+print(comb_sscore)
+print(km_sscore)
+
+print('###### ARI ######')
+print(dp_arscore)
+print(comb_arscore)
+print(km_arscore)
+
+class_dp = set(y_pred_dp)
+class_comb = set(y_pred_comb)
+class_km = set(y_pred_kmeans)
+class_true = set(y_pred_kmeans)
+
+print('###### Clusters ######')
+print(class_dp)
+print(class_comb)
+print(class_km)
+print(class_true)
+print(len(class_dp))
+print(len(class_comb))
+print(len(class_km))
+print(len(class_true))
+
+
+#%% try plotting
+
+X_train_tSNE = utils.dimension_reduction_TSNE(X_train, 2) #could change up to 10
+X_test_tSNE  = utils.dimension_reduction_TSNE(X_test, 2) #could change up to 10
+
+clf_tSNE = BGM(n_components=20, covariance_type="full", weight_concentration_prior_type='dirichlet_process')
+clf_tSNE.fit(X_train_tSNE)
+y_pred_tSNE = clf_tSNE.predict(X_test_tSNE)
+
+tSNE_rscore = rand_score(y_test, y_pred_tSNE)
+tSNE_sscore = silhouette_score(X_test_tSNE, y_pred_tSNE)
+tSNE_arscore = adjusted_rand_score(y_test, y_pred_tSNE)
+
+print('###### tSNE ######')
+print(tSNE_rscore)
+print(tSNE_sscore)
+print(tSNE_arscore)
+
+class_tSNE = set(y_pred_tSNE)
+print(class_tSNE)
+print(len(class_tSNE))
+
+# if we really need plots ... 
+utils.plot_results(
+  X_test_tSNE,
+  y_pred_tSNE,
+  clf_tSNE.means_,
+  clf_tSNE.covariances_,
+  title="DPBGM with tSNE",
+)
+
