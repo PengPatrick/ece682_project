@@ -22,3 +22,18 @@ def dimension_reduction_LDA(X_train, y_train, X, n_components):
   X_train = lda.fit_transform(X_train, y_train)
   X = lda.transform(X)
   return X_train, X
+
+def dimension_reduction_PCA(X,n_components=10):
+  """
+  Parameters
+  ---------
+  X: data with unknown cluster labels
+  n_components: number of components to retain
+
+  Returns
+  ---------
+  X: reduced data with n_components
+  """
+  pca = PCA(n_components=n_components)
+  X=pca.fit_transform(X)
+  return X

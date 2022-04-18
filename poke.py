@@ -13,9 +13,11 @@ import utils
 
 ### Constants
 TOTAL_POINTS = 10000
-RATIOS = np.array([0.16,0.15,0.05,0.1,0.2,0.05,0.05,0.12,0.08,0.04]) # might need random assignments for ratio
+# RATIOS = np.array([0.16,0.15,0.05,0.1,0.2,0.05,0.05,0.12,0.08,0.04]) # might need random assignments for ratio
+RATIOS = np.ones(10) * 0.1 # balanced clusters --- DP and KMeans same hmmm 
 
-myGenerator = DataGenerator(samples=TOTAL_POINTS, n_features=100, n_clusters=10, spread=[1,30], ratio_per_cluster=RATIOS)
+
+myGenerator = DataGenerator(samples=TOTAL_POINTS, n_features=100, n_clusters=11, spread=[1,30], ratio_per_cluster=RATIOS)
 X, labels, centers = myGenerator.generate_data()
 X_train, X_test, y_train, y_test = train_test_split(X, labels, test_size=0.2, random_state=0)
 X_train_LDA, X_test_LDA = utils.dimension_reduction_LDA(X_train,y_train,X_test, 4) #could change up to 10
