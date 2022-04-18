@@ -14,7 +14,10 @@ import utils
 ### Constants
 TOTAL_POINTS = 10000
 # RATIOS = np.array([0.16,0.15,0.05,0.1,0.2,0.05,0.05,0.12,0.08,0.04]) # might need random assignments for ratio
-RATIOS = np.ones(10) * 0.1 # balanced clusters --- DP and KMeans same hmmm 
+RATIOS = np.ones(10) * 0.1 # balanced clusters --- DP and KMeans same performance
+
+### TODO: Explore how data distribution affects the performance for both K-means and DP
+### TODO: Need "worse" dataset so that K-means performance not as good 
 
 
 myGenerator = DataGenerator(samples=TOTAL_POINTS, n_features=100, n_clusters=11, spread=[1,30], ratio_per_cluster=RATIOS)
