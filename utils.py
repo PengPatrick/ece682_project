@@ -1,14 +1,16 @@
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
+from sklearn.cluster import KMeans
 
 from scipy import linalg
-import matplotlib as mpl
 
+import torch 
 
 def dimension_reduction_LDA(X_train, y_train, X, n_components):
   """
@@ -61,6 +63,77 @@ def dimension_reduction_TSNE(X, n_components=2):
   X=tSNE.fit_transform(X)
   return X
 
+def fit_K_means(X,n_clusters):
+  kmeans = KMeans(n_clusters=n_clusters).fit(X)
+  centers=kmeans.cluster_centers_
+  labels=kmeans.labels_
+  return centers, labels
+
+def prior_estimation(est,n_observations,data_dim):
+  a=est/np.log10(n_observations)
+  alpha=2
+  beta=alpha*a
+  beta=np.floor(beta)
+  if est==0:
+    alpha=1
+    beta=1
+  v=data_dim+1
+  W0=np.identity(data_dim)
+  return alpha, beta, v, W0
+
+def train(model, device, train_loader, criterion, optimizer):
+  model.train()
+
+  train_loss = 0
+
+  for _, (data, _) in enumerate(train_loader):
+    
+    data = data.to(device)
+    optimizer.zero_grad()
+    _, decoded_data = model(data)
+
+    loss = criterion(data, decoded_data)
+    loss.backward()
+    optimizer.step()
+
+    train_loss += loss.item()
+
+  avg_loss = train_loss / len(train_loader)
+  
+  return avg_loss
+
+def get_datasets(model, device, train_loader, test_loader, batch_size):
+  X_test = []
+  X_train = []
+  decode_X_train = []
+
+  with torch.no_grad():
+    for _, (data, _) in enumerate(train_loader):
+      data = data.to(device)
+
+      transformed_data, decoded_data = model(data)
+      transformed_data = np.asarray(transformed_data.detach().cpu().numpy())
+      decoded_data = np.asarray(decoded_data.detach().cpu().numpy())
+
+      X_train.append(transformed_data)
+      decode_X_train.append(decoded_data)
+    
+    for _, (data, _) in enumerate(test_loader):
+      data = data.to(device)
+
+      transformed_data, _ = model(data)
+      transformed_data = np.asarray(transformed_data.detach().cpu().numpy())
+
+      X_test.append(transformed_data)
+
+  rep_dim = X_train[0].shape[1]
+
+  out_dim = decode_X_train[0].shape[1]
+  X_train = np.reshape(np.asarray(X_train), (len(train_loader) * batch_size, rep_dim))
+  X_test = np.reshape(np.asarray(X_test), (len(test_loader) * batch_size, rep_dim))
+  decode_X_train = np.reshape(np.asarray(decode_X_train), (len(train_loader) * batch_size, out_dim))
+
+  return X_train, X_test, decode_X_train
 
 # Modified from https://scikit-learn.org/stable/auto_examples/mixture/plot_gmm.html 
 def plot_results(X, Y_, means, covariances, title):
@@ -80,7 +153,6 @@ def plot_results(X, Y_, means, covariances, title):
   angle = np.arctan(u[1] / u[0])
   angle = 180.0 * angle / np.pi  # convert to degrees
   ell = mpl.patches.Ellipse(mean, v[0], v[1], 180.0 + angle, label = i)
-  # ell.set_clip_box(plt.bbox)
   ell.set_alpha(0.5)
   ax.add_artist(ell)
 
