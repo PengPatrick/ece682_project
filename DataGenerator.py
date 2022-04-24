@@ -2,30 +2,34 @@ import numpy as np
 
 class DataGenerator:
   def __init__(self, samples, n_features, n_clusters, ratio_per_cluster, spread=3.0, lower_bound=0, upper_bound=200):
-    '''
+    """
+    A data generator that can randomly generate data from normal distribution.
+    
     Parameters
     ----------
-    samples: int default=None
-        Number of data points generated.
+    samples : int
+      Number of data points generated..
+    n_features : int
+      The dimension of features for each sample.
+    n_clusters : int
+      Number of clusters to generate.
+    ratio_per_cluster : ndarray of shape (n_clusters,)
+      Ratio of samples in each cluster.
+    spread : float or list [lower_bound, upper_bound], optional
+      If float, variance for each feature in each cluster.
+      If list [lower_bound, upper_bound], the lower and upper bounds of variance on each feature in each cluster. 
+      The default is 3.0.
+    lower_bound : int, optional
+      Lower bound of the samples generated. The default is 0.
+    upper_bound : int, optional
+      Upper bound of the samples generated. The default is 200.
 
-    dim: int, default=None
-        The dimension of features for each sample.
+    Returns
+    -------
+    None.
 
-    clusters: int, defult=None
-        Number of clusters to generate.
-
-    spread: float or list [lower_bound, upper_bound], default=3.0
-        If float, variance for each feature in each cluster.
-        If list [lower_bound, upper_bound], the lower and upper bounds of variance on each feature in each cluster
-    
-    ratio_per_cluster : ndarray of shape (clusters) 
-        ratio of samples in each cluster
-
-    lower_bound, upper_bound: int, default lower_bound=0, upper_bound=200
-        Lower and upper bound of the samples generated 
-
-    '''
-
+      """
+      
     self.samples = samples
     self.dim = n_features
     self.n_clusters = n_clusters
@@ -35,17 +39,19 @@ class DataGenerator:
     self.upper_bound = upper_bound
 
   def generate_data(self):
-
-    '''
+    """
+    Generate random data samples.
+    
     Returns
     -------
     X : ndarray of shape (n_samples, n_features)
-        The generated samples.
+      The generated samples.
     labels : ndarray of shape (n_samples,)
-        The integer labels for cluster membership of each sample.
+      The integer labels for cluster membership of each sample.
     centers : ndarray of shape (n_centers, n_features)
-        The centers of each cluster.
-    '''
+      The centers of each cluster.
+      
+    """
     
     if len(self.ratio) != self.n_clusters:
       exit("Number of clusters mismatches!")
