@@ -1,8 +1,28 @@
 import torch.nn as nn
 
-# Similar implementations can be found in the ECE 685 lecture slides
 class MLPAE(nn.Module):
+  """
+  Similar implementations can be found in the ECE 685 lecture slides
+  An MLP undercomplete autoencoder that 
+  can reduce data dimension by extracting nonlinear features
+  """  
+
   def __init__(self, in_components, out_components):
+    """
+    Constructor of this 
+
+    Parameters
+    ----------
+    in_components : int
+      Dimension of input signals.
+    out_components : int
+      Dimension of extracted features.
+
+    Returns
+    -------
+    None.
+
+    """
 
     super(MLPAE, self).__init__()
 
@@ -28,6 +48,7 @@ class MLPAE(nn.Module):
     )
 
   def forward(self, x):
+
     encoder = self.Encoder(x)
     decoder = self.Decoder(encoder)
     return encoder, decoder

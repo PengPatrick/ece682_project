@@ -64,13 +64,31 @@ def dimension_reduction_TSNE(X, n_components=2):
   return X
 
 def fit_K_means(X,n_clusters):
+  """
+  Helper method to 
+
+  Parameters
+  ----------
+  X : ndarray
+    Data with unknown cluster labels.
+  n_clusters : int
+    Expected number of clusters in X.
+
+  Returns
+  -------
+  centers : ndarray of shape (n_clusters, X.shape[1])
+    Coordinates of cluster centers.
+  labels : ndarray of shape (X.shape[0],)
+    Labels of each sample.
+
+  """
   kmeans = KMeans(n_clusters=n_clusters).fit(X)
   centers=kmeans.cluster_centers_
   labels=kmeans.labels_
   return centers, labels
 
-def prior_estimation(est,n_observations,data_dim):
-  a=est/np.log10(n_observations)
+def prior_estimation(est, n_observations, data_dim):
+  a = est / np.log10(n_observations)
   alpha=2
   beta=alpha*a
   beta=np.floor(beta)
@@ -135,8 +153,11 @@ def get_datasets(model, device, train_loader, test_loader, batch_size):
 
   return X_train, X_test, decode_X_train
 
-# Modified from https://scikit-learn.org/stable/auto_examples/mixture/plot_gmm.html 
 def plot_results(X, Y_, means, covariances, title):
+  """
+  Modified from https://scikit-learn.org/stable/auto_examples/mixture/plot_gmm.html 
+  Visualization of clustering results.
+  """
   _, ax = plt.subplots()
     
   for i, (mean, covar) in enumerate(zip(means, covariances)):
