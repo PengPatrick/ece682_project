@@ -9,13 +9,8 @@ Boxuan Li, Danny Luo, Jingyu Peng, Nianli Peng, Wei Wu
 - [ECE 682 Project: Nonparametric Clustering Scheme - Dirichlet Process Mixture Model](#ece682-project)
   - [Authors](#authors)
   - [Contents](#contents)
-  - [TODO](#todo)
   - [Introduction](#intro)
-  - [Project Objective](#project-objective)
-  - [Dataset](#dataset)
-  - [Reference](#reference)
-
-## TODO
+  - [Note](#note)
 
 ## Introduction
 
@@ -28,14 +23,6 @@ interpretability to the clustering model as it estimates the underlying distribu
 Our approach can provide an effecitve alternative approach for real-life machine learning applications with high-dimensional data, 
 ranging from profiling grouping to social media analysis. 
 
-## Project Objective
+## Note
 
-placeholder
-
-## Dataset
-
-placeholder
-
-## Reference
-
-placeholder
+`experiment.ipynb` is the main graph generating script. `DataGenerator.py` is the data generator used in this project, and the undercomplete autoencoder is in `models/AutoEncoders.py`. `utils.py` contains relevant helper methods used in the experiments. 

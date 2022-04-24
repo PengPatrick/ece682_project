@@ -28,7 +28,7 @@ class DataGenerator:
     -------
     None.
 
-      """
+    """
       
     self.samples = samples
     self.dim = n_features
